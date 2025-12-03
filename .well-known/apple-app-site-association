@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "9PTGMPNXZ2.com.symantec.mobilesecurity",
+        "paths": ["*"]
+      }
+    ]
+  }
+}
