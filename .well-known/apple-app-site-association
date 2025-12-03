@@ -4,7 +4,7 @@
     "details": [
       {
         "appID": "9PTGMPNXZ2.com.symantec.mobilesecurity",
-        "paths": ["*"]
+        "paths": ["/app/norton-360-mobile"]
       }
     ]
   }
