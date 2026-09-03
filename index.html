@@ -1,12 +1,539 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Universal Links Test</title>
-  </head>
-  <body>
-    <h1>Universal Links Test</h1>
-    <h2>Supported paths:</h2>
-    <p>/app/norton-360-mobile</p>
-  </body>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swift Quiz — 10 hard questions</title>
+<style>
+  :root{
+    --paper:#eaedf1;
+    --editor:#ffffff;
+    --ink:#16202b;
+    --ink-soft:#5b6875;
+    --rule:#d3dae2;
+    --gutter:#8b98a6;
+    --kw:#9b2393;
+    --str:#c41a16;
+    --com:#3f7a4a;
+    --num:#1c00cf;
+    --typ:#0b6a6f;
+    --swift:#f05138;
+    --good:#1a7f4b;
+    --good-bg:#e7f4ec;
+    --bad:#c0271f;
+    --bad-bg:#fceceb;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+    --ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--ui);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding:28px 18px 64px;
+  }
+  .shell{max-width:660px;margin:0 auto}
+
+  /* editor window */
+  .win{
+    background:var(--editor);
+    border:1px solid var(--rule);
+    border-radius:6px;
+    overflow:hidden;
+    box-shadow:0 1px 0 rgba(22,32,43,.04);
+  }
+  .tabbar{
+    display:flex;align-items:center;gap:10px;
+    padding:0 12px;height:38px;
+    border-bottom:1px solid var(--rule);
+    background:linear-gradient(#f6f8fa,#eff2f6);
+    font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);
+  }
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--swift);flex:none}
+  .tabbar .file{color:var(--ink)}
+  .tabbar .spacer{flex:1}
+  .clock{font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+  .clock.low{color:var(--swift)}
+  .fuse{height:2px;background:var(--rule)}
+  .fuse span{display:block;height:100%;width:100%;background:var(--swift);transform-origin:left center}
+  .fuse.paused span{background:var(--rule)}
+
+  .pane{padding:20px 20px 22px}
+
+  /* code block with line-number gutter */
+  .code{
+    display:flex;gap:0;
+    font-family:var(--mono);font-size:13.5px;line-height:1.65;
+    border:1px solid var(--rule);border-radius:4px;
+    background:#fbfcfd;overflow-x:auto;
+  }
+  .code .lines{
+    flex:none;padding:12px 10px;text-align:right;color:var(--gutter);
+    background:#f2f5f8;border-right:1px solid var(--rule);user-select:none;
+    font-variant-numeric:tabular-nums;
+    white-space:pre;line-height:1.65;
+  }
+  .code pre{margin:0;padding:12px 14px;white-space:pre}
+  .kw{color:var(--kw)}.str{color:var(--str)}.com{color:var(--com)}
+  .num{color:var(--num)}.typ{color:var(--typ)}
+
+  .stem{font-size:15.5px;margin:0 0 14px;max-width:60ch}
+  .qmeta{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:0 0 6px}
+
+  /* answers: autocomplete-list flavour */
+  .opts{list-style:none;margin:18px 0 0;padding:0;border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+  .opts li+li{border-top:1px solid var(--rule)}
+  .opt{
+    display:flex;align-items:baseline;gap:10px;width:100%;
+    background:#fff;border:0;text-align:left;cursor:pointer;
+    padding:11px 13px;font-family:var(--mono);font-size:13px;color:var(--ink);
+    line-height:1.5;
+  }
+  .opt .key{
+    flex:none;width:18px;height:18px;border-radius:3px;background:#eef1f5;
+    color:var(--ink-soft);font-size:11px;display:grid;place-items:center;
+    align-self:center;
+  }
+  .opt:hover:not(:disabled){background:#f4f7fa}
+  .opt:focus-visible{outline:2px solid var(--swift);outline-offset:-2px}
+  .opt:disabled{cursor:default}
+  .opt.correct{background:var(--good-bg);color:var(--good)}
+  .opt.correct .key{background:#cfe8d9;color:var(--good)}
+  .opt.wrong{background:var(--bad-bg);color:var(--bad)}
+  .opt.wrong .key{background:#f6d5d2;color:var(--bad)}
+  .opt.muted{color:var(--ink-soft)}
+
+  /* diagnostic strip */
+  .diag{
+    margin-top:16px;padding:11px 13px;border-left:3px solid;
+    font-size:14px;border-radius:0 4px 4px 0;
+  }
+  .diag.ok{border-color:var(--good);background:var(--good-bg)}
+  .diag.no{border-color:var(--bad);background:var(--bad-bg)}
+  .diag b{font-family:var(--mono);font-size:12.5px;display:block;margin-bottom:3px}
+  .diag.ok b{color:var(--good)}
+  .diag.no b{color:var(--bad)}
+  .diag code{font-family:var(--mono);font-size:12.5px;background:rgba(22,32,43,.06);padding:1px 4px;border-radius:3px}
+
+  .row{display:flex;align-items:center;gap:14px;margin-top:18px;flex-wrap:wrap}
+  button.go{
+    font-family:var(--ui);font-size:14px;font-weight:500;
+    background:var(--ink);color:#fff;border:0;border-radius:5px;
+    padding:9px 16px;cursor:pointer;
+  }
+  button.go:hover{background:#243444}
+  button.go:focus-visible{outline:2px solid var(--swift);outline-offset:2px}
+  button.ghost{
+    background:transparent;color:var(--ink);border:1px solid var(--rule);
+  }
+  button.ghost:hover{background:#f4f7fa}
+  .hint{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft)}
+
+  /* intro */
+  h1{font-size:26px;line-height:1.2;margin:0 0 10px;letter-spacing:-.01em}
+  .lede{font-size:15.5px;color:var(--ink-soft);margin:0 0 18px;max-width:56ch}
+  .rules{margin:0 0 20px;padding:0;list-style:none;font-size:14px;color:var(--ink-soft)}
+  .rules li{padding:4px 0 4px 16px;position:relative}
+  .rules li:before{content:"";position:absolute;left:0;top:12px;width:6px;height:1px;background:var(--gutter)}
+
+  /* results */
+  .score{display:flex;align-items:flex-end;gap:12px;margin:0 0 4px}
+  .score .n{font-family:var(--mono);font-size:44px;line-height:1;letter-spacing:-.02em}
+  .score .of{font-family:var(--mono);font-size:15px;color:var(--ink-soft);padding-bottom:4px}
+  .verdict{font-size:15px;color:var(--ink-soft);margin:0 0 18px;max-width:56ch}
+  .strip{font-size:22px;letter-spacing:2px;margin:0 0 18px;word-break:break-all}
+  .share{
+    font-family:var(--mono);font-size:13px;white-space:pre-wrap;word-break:break-word;
+    background:#fbfcfd;border:1px solid var(--rule);border-radius:4px;padding:12px 13px;margin:0;
+  }
+  .share a{color:var(--swift)}
+  .log{list-style:none;margin:20px 0 0;padding:0;border-top:1px solid var(--rule)}
+  .log li{display:flex;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13.5px}
+  .log .mark{flex:none;font-size:14px}
+  .log .idx{flex:none;font-family:var(--mono);font-size:12px;color:var(--gutter);width:22px}
+  .log .what{flex:1}
+  .log .what em{font-style:normal;color:var(--ink-soft);display:block;font-family:var(--mono);font-size:12px;margin-top:2px}
+  footer{max-width:660px;margin:16px auto 0;font-family:var(--mono);font-size:11.5px;color:var(--ink-soft)}
+  footer a{color:var(--ink-soft)}
+  @media (max-width:520px){
+    body{padding:16px 12px 48px}
+    .pane{padding:16px 14px 18px}
+    h1{font-size:22px}
+    .code{font-size:12.5px}
+    .opt{font-size:12.5px}
+    .score .n{font-size:36px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .fuse span{transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="win">
+    <div class="tabbar">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="file" id="tabFile">SwiftQuiz.swift</span>
+      <span class="spacer"></span>
+      <span class="clock" id="clock" aria-live="off"></span>
+    </div>
+    <div class="fuse paused" id="fuse"><span id="fuseBar"></span></div>
+    <div class="pane" id="pane"></div>
+  </div>
+  <footer><a href="https://vilemraska-gendigital.github.io/">vilemraska-gendigital.github.io</a></footer>
+</div>
+
+<script>
+const SITE = "https://vilemraska-gendigital.github.io/";
+const LIMIT = 20;
+
+const QUESTIONS = [
+  {
+    topic: "Protocol witness dispatch",
+    code:
+`protocol Greeter {
+    func hello()
+}
+extension Greeter {
+    func hello() { print("protocol") }
+    func greet() { hello() }
+}
+struct Host: Greeter {
+    func hello() { print("struct") }
+}
+
+(Host() as Greeter).greet()`,
+    stem: "What does this print?",
+    options: ['struct', 'protocol', 'Compile error: ambiguous use of hello()', 'Infinite recursion'],
+    answer: 0,
+    why: "<code>hello()</code> is declared in the protocol, so it gets a witness-table entry and dispatches dynamically to Host's implementation. Delete the requirement from the protocol body and the same code prints <code>protocol</code> instead."
+  },
+  {
+    topic: "ArraySlice indices",
+    code:
+`let numbers = [10, 20, 30, 40, 50]
+let tail = numbers[2...]
+
+print(tail[0])`,
+    stem: "What happens on the last line?",
+    options: ['Crash: Index out of range', 'Prints 30', 'Prints 10', 'Compile error: subscript unavailable on ArraySlice'],
+    answer: 0,
+    why: "A slice shares its parent's index space. <code>tail</code> is valid over <code>2..&lt;5</code>, so index 0 is out of bounds. Use <code>tail.first</code>, or re-index with <code>Array(tail)</code>."
+  },
+  {
+    topic: "try? and nested optionals",
+    code:
+`func load() throws -> Int? { nil }
+
+let value = try? load()`,
+    stem: "In Swift 5 and later, what are the type and value of <code>value</code>?",
+    options: ['Int? — nil', 'Int?? — .some(nil)', 'Int?? — nil', 'Compile error: cannot apply try? to an optional result'],
+    answer: 0,
+    why: "Since SE-0230, <code>try?</code> flattens the optional it would otherwise nest, so you get a single-level <code>Int?</code>. Before Swift 5 this was <code>Int??</code> holding <code>.some(nil)</code>."
+  },
+  {
+    topic: "Capture lists",
+    code:
+`var counter = 0
+let report = { [counter] in print(counter) }
+
+counter = 10
+report()`,
+    stem: "What does report() print?",
+    options: ['0', '10', '1', 'Compile error: cannot capture a mutable variable in a capture list'],
+    answer: 0,
+    why: "An entry in a capture list is evaluated once, where the closure is written, and bound as an immutable copy. Drop <code>[counter]</code> and the closure captures the variable itself, printing <code>10</code>."
+  },
+  {
+    topic: "defer and return values",
+    code:
+`func nextID() -> Int {
+    var id = 1
+    defer { id += 1 }
+    return id
+}
+
+print(nextID())`,
+    stem: "What is printed?",
+    options: ['1', '2', '0', 'Compile error: defer cannot modify a returned value'],
+    answer: 0,
+    why: "The return value is copied out before deferred blocks run, so the increment affects only the local <code>id</code>. A <code>defer</code> can still change what a caller sees through an <code>inout</code> parameter or a reference type."
+  },
+  {
+    topic: "Grapheme clusters",
+    code:
+`let family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}"
+
+print(family.count, family.unicodeScalars.count)`,
+    stem: "What does this print for the family emoji?",
+    options: ['1 7', '4 7', '1 4', '7 7'],
+    answer: 0,
+    why: "<code>String.count</code> counts extended grapheme clusters, and the whole sequence renders as one character. Underneath it is four emoji joined by three zero-width joiners: seven scalars."
+  },
+  {
+    topic: "Fixed-width integer traps",
+    code:
+`let x: Int8 = -128
+
+print(x / -1)`,
+    stem: "What happens here?",
+    options: ['Crash: division overflow', 'Prints 128', 'Prints -128', 'Prints 127'],
+    answer: 0,
+    why: "<code>Int8</code> spans -128...127, so the mathematically correct 128 has no representation and the operation traps. <code>x.dividedReportingOverflow(by: -1)</code> reports it instead of crashing."
+  },
+  {
+    topic: "Overload resolution",
+    code:
+`func describe<T>(_ x: T) { print("generic") }
+func describe(_ x: Int) { print("int") }
+
+let boxed: Any = 5
+describe(boxed)`,
+    stem: "What does this print?",
+    options: ['generic', 'int', 'Compile error: ambiguous call', 'Crash: unexpected dynamic type'],
+    answer: 0,
+    why: "Overloads are picked at compile time from static types. The argument's static type is <code>Any</code>, so <code>T</code> binds to <code>Any</code> and the generic wins — the <code>Int</code> inside is never consulted. Unwrap with <code>as? Int</code> to reach the other overload."
+  },
+  {
+    topic: "Property observers",
+    code:
+`var level = 0 {
+    didSet {
+        if level < 3 { level += 1 }
+    }
+}
+
+level = 1
+print(level)`,
+    stem: "What is printed?",
+    options: ['2', '3', '1', 'Runtime hang: didSet recurses'],
+    answer: 0,
+    why: "Assigning to the property inside its own <code>didSet</code> does not fire the observer again, so the value is bumped exactly once: 1 becomes 2. (Inside a <code>willSet</code>, the same assignment would be overwritten by the incoming value.)"
+  },
+  {
+    topic: "Actor reentrancy",
+    code:
+`actor Wallet {
+    private var balance = 100
+
+    func withdraw(_ amount: Int) async -> Bool {
+        guard balance >= amount else { return false }
+        await audit()
+        balance -= amount
+        return true
+    }
+
+    private func audit() async { }
+}`,
+    stem: "Two tasks call <code>withdraw(100)</code> concurrently. What can happen?",
+    options: [
+      'Both return true and balance ends at -100',
+      'The actor serializes both calls, so the second returns false',
+      'Compile error: state mutated after a suspension point',
+      'Deadlock: the actor waits on itself'
+    ],
+    answer: 0,
+    why: "Actors guarantee no simultaneous access, not atomic methods. The <code>await</code> is a suspension point where the actor may run the second call, so both pass the guard before either subtracts. Re-check invariants after every <code>await</code>, or keep the critical section free of them."
+  }
+];
+
+/* ---------- tiny Swift highlighter ---------- */
+const KW = "func|let|var|struct|class|enum|protocol|extension|actor|init|deinit|guard|else|if|for|while|switch|case|default|return|throw|throws|try|defer|do|catch|async|await|mutating|nonmutating|static|private|public|internal|self|nil|true|false|in|is|as|some|any|where|lazy|didSet|willSet|get|set|print|repeat|break|continue|typealias|subscript|inout|rethrows|weak|unowned";
+function hl(code){
+  const esc = code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const re = new RegExp("(\\/\\/[^\\n]*)|(\"(?:[^\"\\\\]|\\\\.)*\")|\\b(" + KW + ")\\b|\\b([A-Z][A-Za-z0-9_]*)\\b|\\b(\\d+)\\b","g");
+  return esc.replace(re,(m,com,str,kw,typ,num)=>{
+    if(com) return '<span class="com">'+com+'</span>';
+    if(str) return '<span class="str">'+str+'</span>';
+    if(kw)  return '<span class="kw">'+kw+'</span>';
+    if(typ) return '<span class="typ">'+typ+'</span>';
+    return '<span class="num">'+num+'</span>';
+  });
+}
+function codeBlock(code){
+  const n = code.split("\n").length;
+  let lines = "";
+  for(let i=1;i<=n;i++) lines += i + (i<n?"\n":"");
+  return '<div class="code"><div class="lines" aria-hidden="true">'+lines+'</div><pre><code>'+hl(code)+'</code></pre></div>';
+}
+
+/* ---------- state ---------- */
+const pane = document.getElementById("pane");
+const tabFile = document.getElementById("tabFile");
+const clock = document.getElementById("clock");
+const fuse = document.getElementById("fuse");
+const fuseBar = document.getElementById("fuseBar");
+
+let idx = 0, results = [], revealed = false, ticker = null, endsAt = 0;
+
+function stopTimer(){
+  if(ticker){ clearInterval(ticker); ticker = null; }
+  fuse.classList.add("paused");
+}
+function paintClock(left){
+  clock.textContent = left.toFixed(1).padStart(4,"0") + "s";
+  clock.classList.toggle("low", left <= 5);
+  fuseBar.style.transform = "scaleX(" + Math.max(0, left/LIMIT) + ")";
+}
+function startTimer(){
+  endsAt = performance.now() + LIMIT*1000;
+  fuse.classList.remove("paused");
+  paintClock(LIMIT);
+  ticker = setInterval(()=>{
+    const left = (endsAt - performance.now())/1000;
+    if(left <= 0){ paintClock(0); stopTimer(); answer(null); return; }
+    paintClock(left);
+  },80);
+}
+
+function renderIntro(){
+  tabFile.textContent = "SwiftQuiz.swift";
+  clock.textContent = "";
+  fuseBar.style.transform = "scaleX(1)";
+  fuse.classList.add("paused");
+  pane.innerHTML =
+    '<h1>Ten Swift questions that read easy and aren\u2019t.</h1>' +
+    '<p class="lede">Dispatch, slice indices, optional flattening, integer traps, actor reentrancy. One answer each, and the clock does not stop for thinking out loud.</p>' +
+    codeBlock('// 20 seconds per question. No going back.\nlet score = try await quiz.run()') +
+    '<ul class="rules">' +
+      '<li>20 seconds per question \u2014 running out counts as wrong</li>' +
+      '<li>Answer with a tap, or keys 1\u20134</li>' +
+      '<li>You get the reasoning after each answer, and a shareable result at the end</li>' +
+    '</ul>' +
+    '<div class="row"><button class="go" id="startBtn">Start the quiz</button>' +
+    '<span class="hint">10 questions \u00b7 about 4 minutes</span></div>';
+  document.getElementById("startBtn").focus();
+  document.getElementById("startBtn").addEventListener("click", ()=>{ idx=0; results=[]; renderQuestion(); });
+}
+
+function shuffled(n){
+  const a = Array.from({length:n},(_,i)=>i);
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function renderQuestion(){
+  const q = QUESTIONS[idx];
+  revealed = false;
+  q.order = shuffled(q.options.length);
+  tabFile.textContent = "Question" + (idx+1) + ".swift";
+  pane.innerHTML =
+    '<p class="qmeta">' + (idx+1) + ' / ' + QUESTIONS.length + '  \u2014  ' + q.topic + '</p>' +
+    '<p class="stem">' + q.stem + '</p>' +
+    codeBlock(q.code) +
+    '<ul class="opts">' + q.order.map((real,slot)=>
+      '<li><button class="opt" data-i="'+real+'"><span class="key">'+(slot+1)+'</span><span>'+q.options[real]+'</span></button></li>'
+    ).join("") + '</ul>' +
+    '<div id="after"></div>';
+  pane.querySelectorAll(".opt").forEach(b=>{
+    b.addEventListener("click", ()=> answer(parseInt(b.dataset.i,10)));
+  });
+  startTimer();
+}
+
+function answer(picked){
+  if(revealed) return;
+  revealed = true;
+  stopTimer();
+  const q = QUESTIONS[idx];
+  const ok = picked === q.answer;
+  results.push({ picked, ok, timedOut: picked === null });
+
+  pane.querySelectorAll(".opt").forEach(b=>{
+    const i = parseInt(b.dataset.i,10);
+    b.disabled = true;
+    if(i === q.answer) b.classList.add("correct");
+    else if(i === picked) b.classList.add("wrong");
+    else b.classList.add("muted");
+  });
+
+  const last = idx === QUESTIONS.length - 1;
+  const head = ok ? "\u{1F7E9} Correct" : (picked === null ? "\u{1F7E5} Out of time" : "\u{1F7E5} Wrong");
+  document.getElementById("after").innerHTML =
+    '<div class="diag ' + (ok ? "ok" : "no") + '"><b>' + head + '</b>' + q.why + '</div>' +
+    '<div class="row"><button class="go" id="nextBtn">' + (last ? "See your result" : "Next question") + '</button>' +
+    '<span class="hint">or press Enter</span></div>';
+  const next = document.getElementById("nextBtn");
+  next.focus();
+  next.addEventListener("click", ()=>{
+    if(last){ renderResult(); } else { idx++; renderQuestion(); }
+  });
+}
+
+function verdictFor(score){
+  if(score === 10) return "Nothing left to teach you here. Go argue with the compiler about something harder.";
+  if(score >= 8)  return "Strong. The ones you missed are the kind that ship as a crash report.";
+  if(score >= 5)  return "Respectable \u2014 these are the corners of the language that bite in review, not in a tutorial.";
+  if(score >= 2)  return "Plenty to take away. Read the reasoning again; every miss here maps to a real bug pattern.";
+  return "Rough round. Worth a rerun \u2014 the answers stay counterintuitive until they don\u2019t.";
+}
+
+function renderResult(){
+  stopTimer();
+  tabFile.textContent = "Result.swift";
+  clock.textContent = "";
+  fuseBar.style.transform = "scaleX(0)";
+  const score = results.filter(r=>r.ok).length;
+  const strip = results.map(r=> r.ok ? "\u{1F7E9}" : "\u{1F7E5}").join("");
+  const shareText = "Swift Quiz \u2014 " + score + "/10\n" + strip + "\n" + SITE;
+
+  pane.innerHTML =
+    '<div class="score"><span class="n">' + score + '</span><span class="of">/ 10 correct</span></div>' +
+    '<p class="verdict">' + verdictFor(score) + '</p>' +
+    '<p class="strip">' + strip + '</p>' +
+    '<pre class="share" id="share">Swift Quiz \u2014 ' + score + '/10\n' + strip + '\n<a href="' + SITE + '">' + SITE + '</a></pre>' +
+    '<div class="row"><button class="go" id="copyBtn">Copy result</button>' +
+    '<button class="go ghost" id="againBtn">Try again</button>' +
+    '<span class="hint" id="copyNote"></span></div>' +
+    '<ul class="log">' + results.map((r,i)=>
+      '<li><span class="mark">' + (r.ok ? "\u{1F7E9}" : "\u{1F7E5}") + '</span>' +
+      '<span class="idx">' + (i+1) + '</span>' +
+      '<span class="what">' + QUESTIONS[i].topic +
+      '<em>' + (r.ok ? "answered: " + QUESTIONS[i].options[r.picked]
+                     : (r.timedOut ? "ran out of time \u2014 answer: " + QUESTIONS[i].options[QUESTIONS[i].answer]
+                                   : "you: " + QUESTIONS[i].options[r.picked] + "  \u2192  answer: " + QUESTIONS[i].options[QUESTIONS[i].answer])) +
+      '</em></span></li>'
+    ).join("") + '</ul>';
+
+  const note = document.getElementById("copyNote");
+  document.getElementById("copyBtn").addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText(shareText);
+      note.textContent = "Copied \u2014 score, history and link.";
+    }catch(e){
+      const ta = document.createElement("textarea");
+      ta.value = shareText; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.select();
+      const done = document.execCommand("copy");
+      document.body.removeChild(ta);
+      note.textContent = done ? "Copied \u2014 score, history and link." : "Copy failed \u2014 select the text above.";
+    }
+  });
+  document.getElementById("againBtn").addEventListener("click", ()=>{ idx=0; results=[]; renderQuestion(); });
+  document.getElementById("copyBtn").focus();
+}
+
+document.addEventListener("keydown", e=>{
+  if(e.key === "Enter" || e.key === " "){
+    const n = document.getElementById("nextBtn");
+    if(n && document.activeElement !== n){ e.preventDefault(); n.click(); }
+    return;
+  }
+  if(revealed) return;
+  const k = parseInt(e.key,10);
+  if(k >= 1 && k <= 4){
+    const b = pane.querySelectorAll(".opt")[k-1];
+    if(b) b.click();
+  }
+});
+
+renderIntro();
+</script>
+</body>
 </html>
